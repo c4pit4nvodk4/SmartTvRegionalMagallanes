@@ -16,7 +16,7 @@
 El proyecto está pensado para facilitar el acceso a la información, entretención y transmisiones en vivo desde cualquier dispositivo.
 
 👉 **Accede aquí al proyecto:**  
-🔗 https://c4pit4nvodk4.github.io/TvRegionalMagallanes/
+🔗 https://c4pit4nvodk4.github.io/SmartTvRegionalMagallanes/
 
 ---
 
