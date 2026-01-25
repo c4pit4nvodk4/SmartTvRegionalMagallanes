@@ -17,11 +17,14 @@ html,body{
   font-family:Arial, Helvetica, sans-serif;
 }
 
-video{
+video,audio{
   width:100%;
   height:100%;
-  object-fit:contain;
   background:black;
+}
+
+video{
+  object-fit:contain;
 }
 
 #audioLogo{
@@ -33,7 +36,7 @@ video{
   background:black;
 }
 
-/* ===== OVERLAY ===== */
+/* OVERLAY */
 #overlay{
   position:absolute;
   bottom:20px;
@@ -50,7 +53,6 @@ video{
 }
 
 #overlay.show{opacity:1;}
-
 #overlay img{height:48px;}
 #overlay .info{color:white;}
 #overlay .info strong{font-size:18px;}
@@ -62,7 +64,7 @@ video{
   background:rgba(255,255,255,.3);
 }
 
-/* ===== LISTA DERECHA ===== */
+/* LISTA DERECHA */
 #channelList{
   position:absolute;
   right:20px;
@@ -86,7 +88,6 @@ video{
 #channelItems{
   max-height:100%;
   overflow-y:auto;
-  scroll-behavior:smooth;
 }
 
 .channel-item{
@@ -98,14 +99,8 @@ video{
   opacity:.55;
 }
 
-.channel-item img{
-  height:36px;
-  width:auto;
-}
-
-.channel-item span{
-  font-size:14px;
-}
+.channel-item img{height:36px;}
+.channel-item span{font-size:14px;}
 
 .channel-item.active{
   background:rgba(255,255,255,.18);
@@ -117,9 +112,9 @@ video{
 <body>
 
 <video id="player" autoplay muted playsinline></video>
+<audio id="audioPlayer"></audio>
 <img id="audioLogo">
 
-<!-- Overlay -->
 <div id="overlay">
   <img id="overlayLogo">
   <div class="info">
@@ -130,7 +125,6 @@ video{
   <img src="LOGOS/ICON.png">
 </div>
 
-<!-- Lista derecha -->
 <div id="channelList">
   <div id="channelItems"></div>
 </div>
@@ -138,6 +132,7 @@ video{
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
 const video = document.getElementById("player");
+const audio = document.getElementById("audioPlayer");
 const audioLogo = document.getElementById("audioLogo");
 
 const overlay = document.getElementById("overlay");
@@ -151,8 +146,9 @@ const channelItems = document.getElementById("channelItems");
 let currentChannel = 0;
 let inputNumber = "";
 let overlayTimeout, listTimeout;
+let hls;
 
-/* ===== CANALES ===== */
+/* CANALES + RADIOS */
 const channels = [
 {number:1,name:"TV Regional Magallanes",type:"video",url:"https://c4pit4nvodk4.github.io/TvRegionalMagallanes/Trailer.webm",logo:"LOGOS/ICON.png"},
 {number:2,name:"Pingüino Multimedia",type:"m3u8",url:"https://redirector.rudo.video/hls-video/339f69c6122f6d8f4574732c235f09b7683e31a5/pinguinotv/pinguinotv.smil/playlist.m3u8",logo:"LOGOS/PINGUINOMULTIMEDIA.png"},
@@ -166,30 +162,29 @@ const channels = [
 {number:10,name:"Opinión Sur TV",type:"m3u8",url:"https://stmv5.voxtvhd.com.br/opinionsur/opinionsur/playlist.m3u8?PlaylistM3UCL",logo:"LOGOS/OPINIONSURTV.png"},
 {number:11,name:"UMAG TV 1",type:"m3u8",url:"https://tls-cl.cdnz.cl/umag1/ngrp:live_all/playlist.m3u8",logo:"LOGOS/UMAGTV1.png"},
 {number:12,name:"UMAG TV 2",type:"m3u8",url:"https://tls-cl.cdnz.cl/umag2/live/playlist.m3u8",logo:"LOGOS/UMAGTV2.png"},
-{number:13,name:"Sur TV",type:"m3u8",url:"https://redirector.rudo.video/hls-video/ey6283je82983je9823je8jowowiekldk9838274/surtv/surtv.smil/playlist.m3u8?did=",logo:"LOGOS/SURTV.png"},
+{number:13,name:"Sur TV",type:"m3u8",url:"https://redirector.rudo.video/hls-video/ey6283je82983je9823je8jowowiekldk9838274/surtv/surtv.smil/playlist.m3u8",logo:"LOGOS/SURTV.png"},
 {number:14,name:"Eva Visión",type:"m3u8",url:"https://stmv4.voxtvhd.com.br/evavision/evavision/playlist.m3u8",logo:"LOGOS/EVAVISION.png"},
 {number:15,name:"Eva Visión Retro",type:"m3u8",url:"https://premium.tvcontrolcp.com:1936/evaretro/evaretro/playlist.m3u8",logo:"LOGOS/EVAVISIONRETRO.png"},
 {number:16,name:"Patagonia TV",type:"m3u8",url:"https://videohd.live:19360/8100/8100.m3u8",logo:"LOGOS/PATAGONIATV.png"},
-{number:17,name:"Canal Sur Patagonia",type:"m3u8",url:"https://v2.tustreaming.cl/fmarcoirirs/tracks-v1a1/playlist.m3u8?PlaylistM3UCL",logo:"LOGOS/CANALSURPATAGONIA.png"},
-{number:18,name:"Red Fueguina",type:"m3u8",url:"https://stmv5.voxtvhd.com.br/redfueguina/redfueguina/playlist.m3u8",logo:"LOGOS/redfueguinamedios.png"},
+{number:17,name:"Canal Sur Patagonia",type:"m3u8",url:"https://v2.tustreaming.cl/fmarcoirirs/tracks-v1a1/playlist.m3u8",logo:"LOGOS/CANALSURPATAGONIA.png"},
+{number:18,name:"Red Fueguina",type:"m3u8",url:"https://stmv5.voxtvhd.com.br/redfueguina/redfueguina/playlist.m3u8",logo:"LOGOS/REDFUEGUINAMEDIOS.png"},
 {number:19,name:"EGM Channel",type:"m3u8",url:"https://vdochile.com:3922/live/egm20live.m3u8",logo:"LOGOS/EGMChannel.png"},
 
-/* RADIOS */
 {number:100,name:"Radio Sur",type:"radio",url:"https://sonicpanel.cloudstreaming.eu/8078/stream",logo:"LOGOS/RadioSur.png"},
 {number:101,name:"Faraónica Natales",type:"radio",url:"https://179.9.164.55:1935/radio",logo:"LOGOS/FARAONICANATALES.png"},
 {number:102,name:"Radio Meridional",type:"radio",url:"https://sonic.nnw.cl/8028/stream",logo:"LOGOS/MERIDIONAL.png"},
 {number:103,name:"Patagonia Austral",type:"radio",url:"https://sonicpanel.globalstream.pro/8170/stream",logo:"LOGOS/PATAGONIAAUSTRAL.png"},
 {number:104,name:"Camelot FM",type:"radio",url:"https://sonicpanel.globalstream.pro/8032/stream",logo:"LOGOS/CamelotFM.png"},
 {number:105,name:"Stylo FM",type:"radio",url:"https://cdn.instream.audio/stream/stylojor",logo:"LOGOS/STYLOFM.png"},
-{number:106,name:"Nuevo Día FM",type:"radio",url:"https://streaming01.shockmedia.com.ar:10791",logo:"LOGOS/NuevoDiaFMpng.png"},
-{number:107,name:"Generación Retro",type:"radio",url:"https://sonic.streamingchilenos.com/9634/;",logo:"LOGOS/GENERACIONRETRO.png"},
+{number:106,name:"Nuevo Día FM",type:"radio",url:"https://streaming01.shockmedia.com.ar:10791",logo:"LOGOS/NuevoDiaFM.png"},
+{number:107,name:"Generación Retro",type:"radio",url:"https://sonic.streamingchilenos.com/9634/",logo:"LOGOS/GENERACIONRETRO.png"},
 {number:108,name:"Natalíssima",type:"radio",url:"https://sonicpanel.globalstream.pro/8246/stream",logo:"LOGOS/NATALISSIMA.png"},
 {number:109,name:"Radio Cooperativa",type:"radio",url:"http://stream.cooperativa.cl/cooperativa_link.mp3",logo:"https://cdn.instant.audio/images/logos/emisora-cl/cooperativa.png"},
 {number:110,name:"Carnaval FM",type:"radio",url:"https://sonando-us.digitalproserver.com/carnaval_antofagasta.aac",logo:"https://cdn.instant.audio/images/logos/emisora-cl/carnaval-vina.png"},
-{number:111,name:"Radio Navarino",type:"radio",url:"https://sonic.portalfoxmix.club/8130/stream",logo:"LOGOS/RADIONAVARINO.png"},
+{number:111,name:"Radio Navarino",type:"radio",url:"https://sonic.portalfoxmix.club/8130/stream",logo:"LOGOS/RADIONAVARINO.png"}
 ];
 
-/* ===== LISTA + AUTOSCROLL ===== */
+/* FUNCIONES */
 function renderChannelList(){
   channelItems.innerHTML="";
   channels.forEach((c,i)=>{
@@ -198,25 +193,14 @@ function renderChannelList(){
     div.innerHTML=`<img src="${c.logo}"><span>${c.number} · ${c.name}</span>`;
     channelItems.appendChild(div);
   });
-  scrollActive();
 }
 
-function scrollActive(){
-  const active=document.querySelector(".channel-item.active");
-  if(active){
-    active.scrollIntoView({behavior:"smooth", block:"center"});
-  }
-}
-
-/* ===== OVERLAY ===== */
 function showOverlay(ch){
   overlayLogo.src=ch.logo;
   overlayName.textContent=ch.name;
   overlayNumber.textContent="Canal "+ch.number;
-
   overlay.classList.add("show");
   channelList.classList.add("show");
-  renderChannelList();
 
   clearTimeout(overlayTimeout);
   clearTimeout(listTimeout);
@@ -225,20 +209,21 @@ function showOverlay(ch){
   listTimeout=setTimeout(()=>channelList.classList.remove("show"),4000);
 }
 
-/* ===== CARGAR CANAL ===== */
 function loadChannel(i){
   if(i<0) i=channels.length-1;
   if(i>=channels.length) i=0;
   currentChannel=i;
 
   const ch=channels[i];
-  video.pause();
-  video.src="";
+
+  if(hls){hls.destroy(); hls=null;}
+  video.pause(); audio.pause();
+  video.src=""; audio.src="";
   audioLogo.style.display="none";
 
   if(ch.type==="radio"){
-    video.src=ch.url;
-    video.play();
+    audio.src=ch.url;
+    audio.play();
     audioLogo.src=ch.logo;
     audioLogo.style.display="block";
   }else if(ch.type==="video"){
@@ -247,7 +232,7 @@ function loadChannel(i){
     video.play();
   }else{
     if(Hls.isSupported()){
-      const hls=new Hls();
+      hls=new Hls();
       hls.loadSource(ch.url);
       hls.attachMedia(video);
     }else{
@@ -256,39 +241,17 @@ function loadChannel(i){
     video.play();
   }
 
+  renderChannelList();
   showOverlay(ch);
 }
 
-/* ===== CONTROLES ===== */
 document.addEventListener("keydown",e=>{
   if(e.key==="ArrowUp") loadChannel(currentChannel-1);
   if(e.key==="ArrowDown") loadChannel(currentChannel+1);
-  if(e.key==="+") video.volume=Math.min(1,video.volume+.1);
-  if(e.key==="-") video.volume=Math.max(0,video.volume-.1);
-
-  if(/[0-9]/.test(e.key)){
-    inputNumber+=e.key;
-    setTimeout(()=>{
-      const idx=channels.findIndex(c=>c.number==inputNumber);
-      if(idx!=-1) loadChannel(idx);
-      inputNumber="";
-    },700);
-  }
 });
 
-/* ===== GESTOS ===== */
-let startY=0;
-document.addEventListener("touchstart",e=>startY=e.touches[0].clientY);
-document.addEventListener("touchend",e=>{
-  let endY=e.changedTouches[0].clientY;
-  if(startY-endY>50) loadChannel(currentChannel+1);
-  if(endY-startY>50) loadChannel(currentChannel-1);
-});
-
-/* INICIO */
 loadChannel(0);
 </script>
 
 </body>
 </html>
-
