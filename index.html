@@ -183,6 +183,20 @@ const channels = [
 {number:110,name:"Carnaval FM",type:"radio",url:"https://sonando-us.digitalproserver.com/carnaval_antofagasta.aac",logo:"https://cdn.instant.audio/images/logos/emisora-cl/carnaval-vina.png"},
 {number:111,name:"Radio Navarino",type:"radio",url:"https://sonic.portalfoxmix.club/8130/stream",logo:"LOGOS/RADIONAVARINO.png"}
 ];
+  
+/* ===== TOQUE SUPERIOR / INFERIOR ===== */
+document.addEventListener("click", e => {
+  const y = e.clientY;
+  const height = window.innerHeight;
+
+  if (y < height / 2) {
+    // Parte superior → canal siguiente
+    loadChannel(currentChannel + 1);
+  } else {
+    // Parte inferior → canal anterior
+    loadChannel(currentChannel - 1);
+  }
+});
 
 /* FUNCIONES */
 function renderChannelList(){
@@ -255,3 +269,4 @@ loadChannel(0);
 
 </body>
 </html>
+
